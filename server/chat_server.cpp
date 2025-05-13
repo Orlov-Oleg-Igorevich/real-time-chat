@@ -72,6 +72,7 @@ void ChatServer::do_accept() {
             auto session = std::make_shared<ChatSession>(std::move(socket), *this);
             join(session);
             session->start();
+            send_chat_history(session); // Отправляем историю сообщений новому клиенту
         }
         do_accept();
     });
