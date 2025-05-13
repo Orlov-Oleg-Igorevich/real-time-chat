@@ -1,0 +1,3 @@
+/home/oleg/Рабочий стол/real-time-chat/server/build/CMakeFiles/chat_server.dir
+/home/oleg/Рабочий стол/real-time-chat/server/build/CMakeFiles/edit_cache.dir
+/home/oleg/Рабочий стол/real-time-chat/server/build/CMakeFiles/rebuild_cache.dir

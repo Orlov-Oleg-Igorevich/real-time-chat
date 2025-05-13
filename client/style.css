@@ -1,0 +1,19 @@
+body {
+  font-family: sans-serif;
+  display: flex;
+  justify-content: center;
+}
+#chat {
+  width: 400px;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+li {
+  margin: 4px 0;
+}

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "mutex": "cpp",
+        "unordered_set": "cpp",
+        "string": "cpp"
+    }
+}
