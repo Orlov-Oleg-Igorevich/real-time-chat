@@ -91,3 +91,10 @@ void ChatServer::broadcast(const std::string& msg) {
     std::lock_guard<std::mutex> l(mtx_);
     for (auto& s : sessions_) s->send(msg);
 }
+
+void ChatServer::send_chat_history(std::shared_ptr<ChatSession> session) {
+    std::lock_guard<std::mutex> l(mtx_);
+    db_.load_messages([session](int user_id, const std::string& text, const std::string& ts) {
+        session->send("[" + ts + "] User " + std::to_string(user_id) + ": " + text);
+    });
+}

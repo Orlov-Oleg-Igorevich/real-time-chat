@@ -38,3 +38,18 @@ void Db::save_message(int user_id, const std::string& text) {
     }
     sqlite3_finalize(stmt);
 }
+
+void Db::load_messages(const std::function<void(int, const std::string&, const std::string&)>& callback) {
+    const char* sql = "SELECT user_id, text, ts FROM messages ORDER BY id ASC;";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        throw std::runtime_error("Failed to load messages");
+    }
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int user_id = sqlite3_column_int(stmt, 0);
+        const char* text = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        const char* ts = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        callback(user_id, text, ts);
+    }
+    sqlite3_finalize(stmt);
+}

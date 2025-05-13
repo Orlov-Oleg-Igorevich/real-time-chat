@@ -21,6 +21,7 @@ public:
     void join(std::shared_ptr<ChatSession> session);
     void leave(std::shared_ptr<ChatSession> session);
     void broadcast(const std::string& msg);
+    void send_chat_history(std::shared_ptr<ChatSession> session);
 
     Db& db() { return db_; }
 
