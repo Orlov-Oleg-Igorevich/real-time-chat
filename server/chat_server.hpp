@@ -22,6 +22,7 @@ public:
     void leave(std::shared_ptr<ChatSession> session);
     void broadcast(const std::string& msg);
     void send_chat_history(std::shared_ptr<ChatSession> session);
+    void clear_chat_history(); // Новый метод для очистки истории чата
 
     Db& db() { return db_; }
 

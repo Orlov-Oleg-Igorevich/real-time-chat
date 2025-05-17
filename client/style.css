@@ -69,6 +69,26 @@ button:hover {
   background-color: #0056b3;
 }
 
+#status {
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+#connection-status {
+  font-weight: bold;
+}
+
+#test-connection {
+  margin-top: 10px;
+  background-color: #28a745;
+}
+
+#clear-history {
+  background-color: #dc3545;
+  margin-top: 5px;
+}
+
 .message-container {
   display: flex;
   flex-direction: column;

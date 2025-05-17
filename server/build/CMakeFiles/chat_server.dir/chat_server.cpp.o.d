@@ -1830,4 +1830,4 @@ CMakeFiles/chat_server.dir/chat_server.cpp.o: \
  /usr/include/c++/13/unordered_set \
  /usr/include/c++/13/bits/unordered_set.h \
  /home/oleg/Рабочий\ стол/real-time-chat/server/db.hpp \
- /usr/include/sqlite3.h
+ /usr/include/sqlite3.h /usr/include/c++/13/iostream

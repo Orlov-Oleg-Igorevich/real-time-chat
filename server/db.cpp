@@ -53,3 +53,13 @@ void Db::load_messages(const std::function<void(int, const std::string&, const s
     }
     sqlite3_finalize(stmt);
 }
+
+void Db::clear_messages() {
+    const char* sql = "DELETE FROM messages;";
+    char* err = nullptr;
+    if (sqlite3_exec(db_, sql, nullptr, nullptr, &err) != SQLITE_OK) {
+        std::string e = err;
+        sqlite3_free(err);
+        throw std::runtime_error("Failed to clear messages: " + e);
+    }
+}

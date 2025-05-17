@@ -1641,6 +1641,7 @@ CMakeFiles/chat_server.dir/chat_server.cpp.o: /home/oleg/Рабочий\ сто�
   /usr/include/c++/13/iomanip \
   /usr/include/c++/13/ios \
   /usr/include/c++/13/iosfwd \
+  /usr/include/c++/13/iostream \
   /usr/include/c++/13/istream \
   /usr/include/c++/13/iterator \
   /usr/include/c++/13/limits \
@@ -4815,6 +4816,8 @@ CMakeFiles/chat_server.dir/main.cpp.o: /home/oleg/Рабочий\ стол/real-
 /usr/include/boost/system/detail/system_category_message.hpp:
 
 /usr/include/boost/smart_ptr/weak_ptr.hpp:
+
+/usr/include/c++/13/iostream:
 
 /usr/include/c++/13/bits/hash_bytes.h:
 

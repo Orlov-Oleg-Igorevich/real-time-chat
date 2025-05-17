@@ -11,6 +11,7 @@ public:
 
     void save_message(int user_id, const std::string& text);
     void load_messages(const std::function<void(int, const std::string&, const std::string&)>& callback);
+    void clear_messages(); // Новый метод для очистки истории сообщений
     // функции регистрации / логина...
 
 private:
