@@ -2,20 +2,64 @@
 <html>
 <head>
   <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Real-Time Chat</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <div id="chat">
-    <ul id="messages"></ul>
-    <form id="form">
-      <input id="input" autocomplete="off" placeholder="Type message..." />
-      <button type="submit">Send</button>
-    </form>
-    <div id="status">Connection status: <span id="connection-status">Connecting...</span></div>
-    <button id="test-connection">Test Connection</button>
-    <button id="clear-history">Clear History</button>
+  <div id="chat-app" class="theme-light">
+    <div id="chat-header">
+      <div class="chat-title">
+        <i class="fas fa-comments"></i>
+        <span>Чат</span>
+        <span class="title-hint">(нажмите, чтобы изменить имя)</span>
+      </div>
+      <div class="header-controls">
+        <div id="connection-status">Подключение...</div>
+        <button type="button" id="theme-toggle" class="theme-btn" title="Сменить тему"><i class="fas fa-moon"></i></button>
+        <button type="button" id="more-options" class="menu-btn" title="Ещё"><i class="fas fa-ellipsis-v"></i></button>
+      </div>
+    </div>
+    
+    <div id="chat">
+      <ul id="messages"></ul>
+    </div>
+    
+    <div id="chat-footer">
+      <form id="form">
+        <div class="input-group">
+          <button type="button" class="emoji-btn" title="Эмодзи"><i class="far fa-smile"></i></button>
+          <input id="input" autocomplete="off" placeholder="Введите сообщение..." />
+          <button type="button" class="attach-btn" title="Прикрепить"><i class="fas fa-paperclip"></i></button>
+        </div>
+        <button type="submit" class="send-btn" title="Отправить"><i class="fas fa-paper-plane"></i></button>
+      </form>
+    </div>
+    
+    <!-- Меню дополнительных настроек (скрыто по умолчанию) -->
+    <div id="context-menu">
+      <div class="menu-item" id="clear-chat"><i class="fas fa-broom"></i> Очистить чат</div>
+      <div class="menu-item" id="change-bg"><i class="fas fa-image"></i> Сменить фон</div>
+      <div class="menu-item" id="test-connection"><i class="fas fa-sync"></i> Проверить соединение</div>
+    </div>
+    
+    <!-- Оверлей для эмодзи -->
+    <div id="emoji-overlay" class="hidden">
+      <div class="emoji-panel">
+        <div class="emoji-tabs">
+          <span class="emoji-tab active" data-category="recent"><i class="far fa-clock"></i></span>
+          <span class="emoji-tab" data-category="smileys"><i class="far fa-smile"></i></span>
+          <span class="emoji-tab" data-category="animals"><i class="fas fa-cat"></i></span>
+          <span class="emoji-tab" data-category="food"><i class="fas fa-pizza-slice"></i></span>
+        </div>
+        <div class="emoji-container" id="emoji-container"></div>
+      </div>
+    </div>
   </div>
+  
+  <script src="emoji.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
