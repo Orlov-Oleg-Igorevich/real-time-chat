@@ -69,9 +69,125 @@ private:
                     json j = json::parse(data);
                     std::cerr << "Parsed JSON: type=" << j.value("type", "unknown") << std::endl;
                     
-                    if (j.contains("type") && j["type"] == "join") {
+                    if (j.contains("type") && j["type"] == "register") {
+                        // Обработка регистрации нового пользователя
+                        std::cerr << "Register request from user: " << j.value("username", "unknown") << std::endl;
+                        
+                        if (j.contains("username") && j.contains("password")) {
+                            std::string username = j["username"];
+                            std::string password = j["password"];
+                            
+                            // Хэшируем пароль
+                            std::string password_hash = Auth::hash_password(password);
+                            
+                            // Пытаемся зарегистрировать пользователя
+                            bool success = self->server_.db().register_user(username, password_hash);
+                            
+                            json response;
+                            if (success) {
+                                // Получаем созданного пользователя
+                                auto user = self->server_.db().get_user_by_name(username);
+                                if (user) {
+                                    // Создаем JWT токен
+                                    std::string token = Auth::create_token(*user);
+                                    
+                                    response = {
+                                        {"type", "register_response"},
+                                        {"success", true},
+                                        {"token", token},
+                                        {"username", username}
+                                    };
+                                } else {
+                                    response = {
+                                        {"type", "register_response"},
+                                        {"success", false},
+                                        {"error", "Ошибка при создании пользователя"}
+                                    };
+                                }
+                            } else {
+                                response = {
+                                    {"type", "register_response"},
+                                    {"success", false},
+                                    {"error", "Пользователь с таким именем уже существует"}
+                                };
+                            }
+                            
+                            // Отправляем ответ только текущему клиенту
+                            self->send(response.dump());
+                            self->do_read();
+                            return;
+                        }
+                    }
+                    else if (j.contains("type") && j["type"] == "login") {
+                        // Обработка логина
+                        std::cerr << "Login request from user: " << j.value("username", "unknown") << std::endl;
+                        
+                        if (j.contains("username") && j.contains("password")) {
+                            std::string username = j["username"];
+                            std::string password = j["password"];
+                            
+                            // Хэшируем пароль
+                            std::string password_hash = Auth::hash_password(password);
+                            
+                            // Проверяем логин и пароль
+                            auto user = self->server_.db().login_user(username, password_hash);
+                            
+                            json response;
+                            if (user) {
+                                // Создаем JWT токен
+                                std::string token = Auth::create_token(*user);
+                                
+                                response = {
+                                    {"type", "login_response"},
+                                    {"success", true},
+                                    {"token", token},
+                                    {"username", user->username}
+                                };
+                            } else {
+                                response = {
+                                    {"type", "login_response"},
+                                    {"success", false},
+                                    {"error", "Неверное имя пользователя или пароль"}
+                                };
+                            }
+                            
+                            // Отправляем ответ только текущему клиенту
+                            self->send(response.dump());
+                            self->do_read();
+                            return;
+                        }
+                    }
+                    else if (j.contains("type") && j["type"] == "join") {
                         // Обработка сообщения "join" - пользователь присоединился
                         std::cerr << "Join message from user: " << j.value("user", "unknown") << std::endl;
+                        
+                        // Проверяем JWT токен если он есть
+                        bool auth_success = false;
+                        std::string username = j.value("user", "unknown");
+                        
+                        if (j.contains("token")) {
+                            std::string token = j["token"];
+                            auto user_id = Auth::verify_token(token);
+                            
+                            if (user_id) {
+                                auto user = self->server_.db().get_user_by_id(*user_id);
+                                if (user && user->username == username) {
+                                    auth_success = true;
+                                }
+                            }
+                        }
+                        
+                        if (!auth_success) {
+                            json response = {
+                                {"type", "auth_error"},
+                                {"error", "Недействительный токен аутентификации"}
+                            };
+                            
+                            // Отправляем ошибку только текущему клиенту
+                            self->send(response.dump());
+                            self->do_read();
+                            return;
+                        }
                         
                         // Отправляем всем только broadcast, чтобы все узнали о новом пользователе
                     }
@@ -91,8 +207,34 @@ private:
                         std::string message = j["text"];
                         std::cerr << "Message from " << username << ": " << message << std::endl;
                         
-                        // Сохраняем в БД имя пользователя и текст
-                        int user_id = std::hash<std::string>{}(username) % 10000;
+                        // Проверяем JWT токен если он есть
+                        bool auth_success = false;
+                        int user_id = 0;
+                        
+                        if (j.contains("token")) {
+                            std::string token = j["token"];
+                            auto verified_user_id = Auth::verify_token(token);
+                            
+                            if (verified_user_id) {
+                                auto user = self->server_.db().get_user_by_id(*verified_user_id);
+                                if (user && user->username == username) {
+                                    auth_success = true;
+                                    user_id = user->id;
+                                }
+                            }
+                        }
+                        
+                        if (!auth_success) {
+                            json response = {
+                                {"type", "auth_error"},
+                                {"error", "Недействительный токен аутентификации"}
+                            };
+                            
+                            // Отправляем ошибку только текущему клиенту
+                            self->send(response.dump());
+                            self->do_read();
+                            return;
+                        }
                         
                         // Сохраняем оригинальное имя пользователя в поле text
                         // в формате JSON, чтобы восстановить позже

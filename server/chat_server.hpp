@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <mutex>
 #include "db.hpp"
+#include "auth.hpp"
 
 namespace beast  = boost::beast;
 namespace http   = beast::http;
