@@ -14,4 +14,11 @@ add_executable(chat_server
 
 target_include_directories(chat_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(Boost REQUIRED COMPONENTS system thread)
-target_link_libraries(chat_server PRIVATE Boost::system Boost::thread sqlite3 OpenSSL::SSL OpenSSL::Crypto)
+find_package(nlohmann_json REQUIRED)
+target_link_libraries(chat_server PRIVATE 
+    Boost::system 
+    Boost::thread 
+    sqlite3 
+    OpenSSL::SSL 
+    OpenSSL::Crypto 
+    nlohmann_json::nlohmann_json)

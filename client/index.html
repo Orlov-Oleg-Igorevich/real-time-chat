@@ -20,8 +20,8 @@
         <form class="auth-form">
           <h2>Вход в чат</h2>
           <div class="form-group">
-            <input type="text" id="login-username" name="username" placeholder=" " required>
-            <label for="login-username">Имя пользователя</label>
+            <input type="text" id="login-nickname" name="nickname" placeholder=" " required>
+            <label for="login-nickname">Никнейм</label>
             <span class="form-input-icon"><i class="fas fa-user"></i></span>
           </div>
           <div class="form-group">
@@ -40,8 +40,13 @@
         <form class="auth-form">
           <h2>Регистрация</h2>
           <div class="form-group">
-            <input type="text" id="register-username" name="username" placeholder=" " required>
-            <label for="register-username">Имя пользователя</label>
+            <input type="text" id="register-nickname" name="nickname" placeholder=" " required>
+            <label for="register-nickname">Уникальный никнейм</label>
+            <span class="form-input-icon"><i class="fas fa-id-card"></i></span>
+          </div>
+          <div class="form-group">
+            <input type="text" id="register-display-name" name="display_name" placeholder=" " required>
+            <label for="register-display-name">Отображаемое имя</label>
             <span class="form-input-icon"><i class="fas fa-user-plus"></i></span>
           </div>
           <div class="form-group">
@@ -114,6 +119,7 @@
   </div>
   
   <script src="emoji.js"></script>
+  <script src="auth_helpers.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

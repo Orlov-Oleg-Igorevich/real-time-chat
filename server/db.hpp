@@ -7,7 +7,8 @@
 
 struct User {
     int id;
-    std::string username;
+    std::string nickname;    // Уникальный никнейм для идентификации пользователя
+    std::string display_name; // Отображаемое имя
     std::string password_hash;
 };
 
@@ -21,10 +22,11 @@ public:
     void clear_messages(); // Новый метод для очистки истории сообщений
     
     // Методы для работы с пользователями
-    bool register_user(const std::string& username, const std::string& password_hash);
-    std::optional<User> login_user(const std::string& username, const std::string& password_hash);
+    bool register_user(const std::string& nickname, const std::string& display_name, const std::string& password_hash);
+    std::optional<User> login_user(const std::string& nickname, const std::string& password_hash);
     std::optional<User> get_user_by_id(int user_id);
-    std::optional<User> get_user_by_name(const std::string& username);
+    std::optional<User> get_user_by_nickname(const std::string& nickname);
+    bool check_nickname_exists(const std::string& nickname); // Проверка существования никнейма
 
 private:
     sqlite3* db_;

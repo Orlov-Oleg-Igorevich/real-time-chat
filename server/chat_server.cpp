@@ -73,30 +73,49 @@ private:
                         // Обработка регистрации нового пользователя
                         std::cerr << "Register request from user: " << j.value("username", "unknown") << std::endl;
                         
-                        if (j.contains("username") && j.contains("password")) {
-                            std::string username = j["username"];
+                        if (j.contains("nickname") && j.contains("display_name") && j.contains("password")) {
+                            std::string nickname = j["nickname"];
+                            std::string display_name = j["display_name"];
                             std::string password = j["password"];
                             
-                            // Хэшируем пароль
-                            std::string password_hash = Auth::hash_password(password);
-                            
-                            // Пытаемся зарегистрировать пользователя
-                            bool success = self->server_.db().register_user(username, password_hash);
+                            // Проверяем, существует ли уже пользователь с таким никнеймом
+                            bool nickname_exists = self->server_.db().check_nickname_exists(nickname);
                             
                             json response;
-                            if (success) {
-                                // Получаем созданного пользователя
-                                auto user = self->server_.db().get_user_by_name(username);
-                                if (user) {
-                                    // Создаем JWT токен
-                                    std::string token = Auth::create_token(*user);
-                                    
-                                    response = {
-                                        {"type", "register_response"},
-                                        {"success", true},
-                                        {"token", token},
-                                        {"username", username}
-                                    };
+                            if (nickname_exists) {
+                                response = {
+                                    {"type", "register_response"},
+                                    {"success", false},
+                                    {"error", "Пользователь с таким никнеймом уже существует"}
+                                };
+                            } else {
+                                // Хэшируем пароль
+                                std::string password_hash = Auth::hash_password(password);
+                                
+                                // Пытаемся зарегистрировать пользователя
+                                bool success = self->server_.db().register_user(nickname, display_name, password_hash);
+                                
+                                if (success) {
+                                    // Получаем созданного пользователя
+                                    auto user = self->server_.db().get_user_by_nickname(nickname);
+                                    if (user) {
+                                        // Создаем JWT токен
+                                        std::string token = Auth::create_token(*user);
+                                        
+                                        response = {
+                                            {"type", "register_response"},
+                                            {"success", true},
+                                            {"token", token},
+                                            {"nickname", nickname},
+                                            {"display_name", display_name}
+                                        };
+                                    } else {
+                                        response = {
+                                            {"type", "register_response"},
+                                            {"success", false},
+                                            {"error", "Ошибка при создании пользователя"}
+                                        };
+                                    }
                                 } else {
                                     response = {
                                         {"type", "register_response"},
@@ -104,12 +123,6 @@ private:
                                         {"error", "Ошибка при создании пользователя"}
                                     };
                                 }
-                            } else {
-                                response = {
-                                    {"type", "register_response"},
-                                    {"success", false},
-                                    {"error", "Пользователь с таким именем уже существует"}
-                                };
                             }
                             
                             // Отправляем ответ только текущему клиенту
@@ -120,17 +133,17 @@ private:
                     }
                     else if (j.contains("type") && j["type"] == "login") {
                         // Обработка логина
-                        std::cerr << "Login request from user: " << j.value("username", "unknown") << std::endl;
+                        std::cerr << "Login request from user: " << j.value("nickname", "unknown") << std::endl;
                         
-                        if (j.contains("username") && j.contains("password")) {
-                            std::string username = j["username"];
+                        if (j.contains("nickname") && j.contains("password")) {
+                            std::string nickname = j["nickname"];
                             std::string password = j["password"];
                             
                             // Хэшируем пароль
                             std::string password_hash = Auth::hash_password(password);
                             
                             // Проверяем логин и пароль
-                            auto user = self->server_.db().login_user(username, password_hash);
+                            auto user = self->server_.db().login_user(nickname, password_hash);
                             
                             json response;
                             if (user) {
@@ -141,13 +154,14 @@ private:
                                     {"type", "login_response"},
                                     {"success", true},
                                     {"token", token},
-                                    {"username", user->username}
+                                    {"nickname", user->nickname},
+                                    {"display_name", user->display_name}
                                 };
                             } else {
                                 response = {
                                     {"type", "login_response"},
                                     {"success", false},
-                                    {"error", "Неверное имя пользователя или пароль"}
+                                    {"error", "Неверный никнейм или пароль"}
                                 };
                             }
                             
@@ -163,7 +177,7 @@ private:
                         
                         // Проверяем JWT токен если он есть
                         bool auth_success = false;
-                        std::string username = j.value("user", "unknown");
+                        std::string display_name = j.value("user", "unknown");
                         
                         if (j.contains("token")) {
                             std::string token = j["token"];
@@ -171,7 +185,8 @@ private:
                             
                             if (user_id) {
                                 auto user = self->server_.db().get_user_by_id(*user_id);
-                                if (user && user->username == username) {
+                                // Проверяем по display_name, так как для фронтенда это будет отображаемое имя
+                                if (user && user->display_name == display_name) {
                                     auth_success = true;
                                 }
                             }
@@ -217,7 +232,8 @@ private:
                             
                             if (verified_user_id) {
                                 auto user = self->server_.db().get_user_by_id(*verified_user_id);
-                                if (user && user->username == username) {
+                                // Проверяем по display_name, так как это отображаемое имя
+                                if (user && user->display_name == username) {
                                     auth_success = true;
                                     user_id = user->id;
                                 }

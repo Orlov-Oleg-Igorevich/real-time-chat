@@ -62,37 +62,168 @@ if (isTokenExpired(authToken)) {
 }
 
 // Функция для входа пользователя
-function loginUser(username, password) {
+function loginUser(nickname, password, loginButton) {
   const loginMsg = {
     type: "login",
-    username: username,
+    nickname: nickname,
     password: password
+  };
+  
+  // Функция обработки ответов сервера для входа
+  const handleLoginResponses = (data, event) => {
+    console.log("Обрабатываем ответ на вход:", data);
+    
+    // Обработка различных типов ответов
+    if (data.type === "login_response") {
+      if (loginButton) setButtonLoading(loginButton, false);
+      
+      if (data.success) {
+        // Сохраняем токен и информацию о пользователе
+        authToken = data.token;
+        username = data.display_name; // Используем отображаемое имя для UI
+        localStorage.setItem('auth_token', authToken);
+        localStorage.setItem('username', username);
+        localStorage.setItem('nickname', data.nickname); // Сохраняем никнейм для будущих обращений
+        
+        // Показываем приветственное сообщение
+        showToast(`Добро пожаловать, ${username}!`);
+        
+        // Переходим в чат
+        document.getElementById('auth-container').classList.add('hidden');
+        document.getElementById('chat-app').classList.remove('hidden');
+        document.body.classList.remove('auth-mode');
+        
+        // Перезагружаем страницу после небольшой задержки для правильной инициализации
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
+        
+        return true; // Сообщаем, что обработали сообщение
+      } else {
+        // Показываем сообщение об ошибке
+        const errorElement = document.getElementById('login-error');
+        if (errorElement) {
+          errorElement.textContent = data.error || "Неверный никнейм или пароль";
+          errorElement.classList.add('error-shake');
+          setTimeout(() => errorElement.classList.remove('error-shake'), 500);
+        }
+        return true; // Сообщаем, что обработали сообщение
+      }
+    }
+    
+    return false; // Сообщаем, что не обработали сообщение
   };
   
   // Проверяем, что ws существует и соединение открыто
   if (ws && ws.readyState === WebSocket.OPEN) {
+    // Устанавливаем обработчик для ответа
+    setupAuthWebSocketHandlers(ws, handleLoginResponses);
     ws.send(JSON.stringify(loginMsg));
   } else {
-    console.error("WebSocket соединение не установлено. Не могу отправить запрос авторизации.");
-    showToast("Ошибка подключения к серверу. Попробуйте обновить страницу.");
+    console.log("WebSocket соединение не установлено или закрыто. Пытаемся переподключиться...");
+    
+    // Создаем новое WebSocket соединение
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsUrl = `${protocol}localhost:9002`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log("WebSocket соединение восстановлено для входа");
+      // Устанавливаем обработчик для ответа
+      setupAuthWebSocketHandlers(ws, handleLoginResponses);
+      ws.send(JSON.stringify(loginMsg));
+    };
+    
+    ws.onerror = (error) => {
+      console.error("Ошибка при переподключении WebSocket:", error);
+      showToast("Ошибка подключения к серверу. Попробуйте обновить страницу.");
+      if (loginButton) setButtonLoading(loginButton, false);
+    };
   }
 }
 
 // Функция для регистрации пользователя
-function registerUser(username, password) {
+function registerUser(nickname, display_name, password, registerButton) {
   const registerMsg = {
     type: "register",
-    username: username,
+    nickname: nickname,
+    display_name: display_name,
     password: password
+  };
+  
+  // Функция обработки ответов сервера для регистрации
+  const handleRegisterResponses = (data, event) => {
+    console.log("Обрабатываем ответ на регистрацию:", data);
+    
+    // Обработка различных типов ответов
+    if (data.type === "register_response") {
+      if (registerButton) setButtonLoading(registerButton, false);
+      
+      if (data.success) {
+        // Сохраняем полученные данные
+        authToken = data.token;
+        username = data.display_name;
+        localStorage.setItem('auth_token', authToken);
+        localStorage.setItem('username', username);
+        localStorage.setItem('nickname', data.nickname);
+        
+        // Показываем уведомление
+        showToast(`Регистрация успешна! Добро пожаловать, ${username}!`);
+        
+        // Переходим в чат
+        document.getElementById('auth-container').classList.add('hidden');
+        document.getElementById('chat-app').classList.remove('hidden');
+        document.body.classList.remove('auth-mode');
+        
+        // Перезагружаем страницу после небольшой задержки
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
+        
+        return true; // Сообщаем, что обработали сообщение
+      } else {
+        // Показываем сообщение об ошибке
+        const errorElement = document.getElementById('register-error');
+        if (errorElement) {
+          errorElement.textContent = data.error || "Ошибка при регистрации";
+          errorElement.classList.add('error-shake');
+          setTimeout(() => errorElement.classList.remove('error-shake'), 500);
+        }
+        return true; // Сообщаем, что обработали сообщение
+      }
+    }
+    
+    return false; // Сообщаем, что не обработали сообщение
   };
   
   // Проверяем, что ws существует и соединение открыто
   if (ws && ws.readyState === WebSocket.OPEN) {
     console.log("Отправка запроса на регистрацию:", registerMsg);
+    // Устанавливаем обработчик для ответа
+    setupAuthWebSocketHandlers(ws, handleRegisterResponses);
     ws.send(JSON.stringify(registerMsg));
   } else {
-    console.error("WebSocket соединение не установлено. Не могу отправить запрос регистрации.");
-    showToast("Ошибка подключения к серверу. Попробуйте обновить страницу.");
+    console.log("WebSocket соединение не установлено или закрыто. Пытаемся переподключиться...");
+    
+    // Создаем новое WebSocket соединение
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const wsUrl = `${protocol}localhost:9002`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log("WebSocket соединение восстановлено для регистрации");
+      // Устанавливаем обработчик для ответа
+      setupAuthWebSocketHandlers(ws, handleRegisterResponses);
+      ws.send(JSON.stringify(registerMsg));
+    };
+    
+    ws.onerror = (error) => {
+      console.error("Ошибка при переподключении WebSocket:", error);
+      showToast("Ошибка подключения к серверу. Попробуйте обновить страницу.");
+      if (registerButton) setButtonLoading(registerButton, false);
+    };
   }
 }
 
@@ -109,17 +240,18 @@ function logout() {
   document.body.classList.add('auth-mode');
   
   // Очищаем поля формы
-  if (document.getElementById('login-username')) {
-    document.getElementById('login-username').value = '';
+  if (document.getElementById('login-nickname')) {
+    document.getElementById('login-nickname').value = '';
     document.getElementById('login-password').value = '';
   }
   if (document.getElementById('login-error')) {
     document.getElementById('login-error').textContent = '';
   }
   
-  // Закрываем WebSocket соединение
+  // Закрываем WebSocket соединение и сбрасываем объект
   if (ws) {
     ws.close();
+    ws = null; // Важно для повторного входа без перезагрузки страницы
   }
   
   // Показываем уведомление
@@ -373,8 +505,82 @@ function setupWebSocketHandlers() {
       // Скрываем индикатор печатания, если он есть
       removeTypingIndicator();
   
-      // Обработка ответов аутентификации
-      if (data.type === "auth_response") {
+      // Обработка ответов на логин
+      if (data.type === "login_response") {
+        const loginButton = document.querySelector('#login-form button[type="submit"]');
+        if (loginButton) {
+          setButtonLoading(loginButton, false);
+        }
+        
+        if (data.success) {
+          // Сохраняем токен и информацию о пользователе
+          authToken = data.token;
+          username = data.display_name; // Используем отображаемое имя для UI
+          localStorage.setItem('auth_token', authToken);
+          localStorage.setItem('username', username);
+          localStorage.setItem('nickname', data.nickname); // Сохраняем никнейм для будущих обращений
+          
+          // Показываем приветственное сообщение
+          showToast(`Добро пожаловать, ${username}!`);
+          
+          // Переходим в чат
+          document.getElementById('auth-container').classList.add('hidden');
+          document.getElementById('chat-app').classList.remove('hidden');
+          document.body.classList.remove('auth-mode');
+          
+          // Перезагружаем страницу после небольшой задержки для правильной инициализации
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        } else {
+          // Показываем сообщение об ошибке
+          const errorElement = document.getElementById('login-error');
+          if (errorElement) {
+            errorElement.textContent = data.error || "Неверный никнейм или пароль";
+            errorElement.classList.add('error-shake');
+            setTimeout(() => errorElement.classList.remove('error-shake'), 500);
+          }
+        }
+      }
+      // Обработка ответов на регистрацию
+      else if (data.type === "register_response") {
+        const registerButton = document.querySelector('#register-form button[type="submit"]');
+        if (registerButton) {
+          setButtonLoading(registerButton, false);
+        }
+        
+        if (data.success) {
+          // Сохраняем токен и информацию о пользователе
+          authToken = data.token;
+          username = data.display_name; // Используем отображаемое имя для UI
+          localStorage.setItem('auth_token', authToken);
+          localStorage.setItem('username', username);
+          localStorage.setItem('nickname', data.nickname); // Сохраняем никнейм для будущих обращений
+          
+          // Показываем приветственное сообщение
+          showToast(`Регистрация успешна! Добро пожаловать, ${username}!`);
+          
+          // Переходим в чат
+          document.getElementById('auth-container').classList.add('hidden');
+          document.getElementById('chat-app').classList.remove('hidden');
+          document.body.classList.remove('auth-mode');
+          
+          // Перезагружаем страницу после небольшой задержки для правильной инициализации
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        } else {
+          // Показываем сообщение об ошибке
+          const errorElement = document.getElementById('register-error');
+          if (errorElement) {
+            errorElement.textContent = data.error || "Ошибка при регистрации";
+            errorElement.classList.add('error-shake');
+            setTimeout(() => errorElement.classList.remove('error-shake'), 500);
+          }
+        }
+      }
+      // Обработка ответов аутентификации (устаревший код для обратной совместимости)
+      else if (data.type === "auth_response") {
         // Находим кнопку, которая в состоянии загрузки
         let button;
         if (data.action === "login") {
@@ -389,9 +595,10 @@ function setupWebSocketHandlers() {
         }
         
         if (data.success) {
-          // Сохраняем токен и имя пользователя
+          // Сохраняем токен и данные пользователя
           authToken = data.token;
-          username = data.username;
+          // В случае логина используем display_name для отображения
+          username = data.display_name || data.nickname;
           localStorage.setItem('auth_token', authToken);
           localStorage.setItem('username', username);
           
@@ -854,7 +1061,7 @@ function setupAuthHandlers() {
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
       
-      const loginUsername = document.getElementById('login-username').value;
+      const loginNickname = document.getElementById('login-nickname').value;
       const loginPassword = document.getElementById('login-password').value;
       const loginButton = this.querySelector('button[type="submit"]');
       
@@ -862,7 +1069,7 @@ function setupAuthHandlers() {
       document.getElementById('login-error').textContent = '';
       
       // Проверка полей ввода
-      if (!loginUsername || !loginPassword) {
+      if (!loginNickname || !loginPassword) {
         document.getElementById('login-error').textContent = 'Заполните все поля';
         return;
       }
@@ -884,7 +1091,7 @@ function setupAuthHandlers() {
             // Добавляем обработчики для нового соединения
             ws.onopen = () => {
               console.log("WebSocket соединение установлено для входа");
-              loginUser(loginUsername, loginPassword);
+              loginUser(loginNickname, loginPassword, loginButton);
               
               // Устанавливаем таймаут для снятия индикатора загрузки, если ответ не получен
               setTimeout(() => {
@@ -911,7 +1118,7 @@ function setupAuthHandlers() {
                 const data = JSON.parse(event.data);
                 
                 // Проверяем, не является ли ответ эхом запроса входа
-                if (data.type === "login" && data.username && data.password) {
+                if (data.type === "login" && data.nickname && data.password) {
                   console.log("Получено эхо запроса входа. Имитируем успешный вход...");
                   
                   // Устанавливаем таймаут для обработки результата входа
@@ -923,9 +1130,9 @@ function setupAuthHandlers() {
                     // Генерируем временный токен с определённым форматом для отличия
                     const fakeToken = "temp_token_" + Math.random().toString(36).substr(2) + "_" + Date.now();
                     localStorage.setItem('auth_token', fakeToken);
-                    localStorage.setItem('username', loginUsername);
+                    localStorage.setItem('username', loginNickname);
                     authToken = fakeToken;
-                    username = loginUsername;
+                    username = loginNickname;
                     
                     // Показываем приветственное сообщение
                     showToast(`Добро пожаловать, ${username}!`);
@@ -939,7 +1146,40 @@ function setupAuthHandlers() {
                   return; // Прерываем дальнейшую обработку
                 }
                 
-                // Обработка стандартного ответа на вход
+                // Обработка нового формата ответа на вход
+                if (data.type === "login_response") {
+                  console.log("Обрабатываем новый ответ на вход:", data);
+                  setButtonLoading(loginButton, false);
+                  
+                  if (data.success) {
+                    // Сохраняем токен и информацию о пользователе
+                    authToken = data.token;
+                    username = data.display_name; // Используем отображаемое имя для UI
+                    localStorage.setItem('auth_token', authToken);
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('nickname', data.nickname); // Сохраняем никнейм для будущих обращений
+                    
+                    // Показываем приветственное сообщение
+                    showToast(`Добро пожаловать, ${username}!`);
+                    
+                    // Перезагружаем страницу через небольшую задержку
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 800);
+                  } else {
+                    // Показываем сообщение об ошибке
+                    const errorElement = document.getElementById('login-error');
+                    if (errorElement) {
+                      errorElement.textContent = data.error || "Неверный никнейм или пароль";
+                      errorElement.classList.add('error-shake');
+                      setTimeout(() => errorElement.classList.remove('error-shake'), 500);
+                    }
+                  }
+                  
+                  return; // Прерываем дальнейшую обработку
+                }
+                
+                // Обработка стандартного ответа на вход (для обратной совместимости)
                 if (data.type === "auth_response" && data.action === "login") {
                   console.log("Обрабатываем ответ на вход:", data);
                   setButtonLoading(loginButton, false);
@@ -977,7 +1217,7 @@ function setupAuthHandlers() {
           } else {
             // Если объект ws существует, но не в открытом состоянии
             setTimeout(() => {
-              loginUser(loginUsername, loginPassword);
+              loginUser(loginNickname, loginPassword);
               // Скрываем индикатор загрузки через 2 секунды, если не получили ответ
               setButtonLoading(loginButton, false);
             }, 1000); // Увеличиваем задержку до 1 секунды
@@ -988,7 +1228,7 @@ function setupAuthHandlers() {
           setButtonLoading(loginButton, false);
         }          } else {
             // WebSocket соединение уже установлено
-            loginUser(loginUsername, loginPassword);
+            loginUser(loginNickname, loginPassword, loginButton);
             
             // Устанавливаем таймаут для снятия индикатора загрузки, если ответ не получен
             setTimeout(() => {
@@ -1008,7 +1248,8 @@ function setupAuthHandlers() {
     registerForm.addEventListener('submit', function(e) {
       e.preventDefault();
       
-      const registerUsername = document.getElementById('register-username').value;
+      const registerNickname = document.getElementById('register-nickname').value;
+      const registerDisplayName = document.getElementById('register-display-name').value;
       const registerPassword = document.getElementById('register-password').value;
       const registerPasswordConfirm = document.getElementById('register-password-confirm').value;
       const registerButton = this.querySelector('button[type="submit"]');
@@ -1017,8 +1258,14 @@ function setupAuthHandlers() {
       document.getElementById('register-error').textContent = '';
       
       // Проверка полей ввода
-      if (!registerUsername || !registerPassword || !registerPasswordConfirm) {
+      if (!registerNickname || !registerDisplayName || !registerPassword || !registerPasswordConfirm) {
         document.getElementById('register-error').textContent = 'Заполните все поля';
+        return;
+      }
+      
+      // Проверка валидности никнейма (только буквы, цифры и символы подчеркивания)
+      if (!/^[a-zA-Z0-9_]+$/.test(registerNickname)) {
+        document.getElementById('register-error').textContent = 'Никнейм может содержать только латинские буквы, цифры и знаки подчеркивания';
         return;
       }
       
@@ -1045,7 +1292,7 @@ function setupAuthHandlers() {
             // Добавляем обработчики для нового соединения
             ws.onopen = () => {
               console.log("WebSocket соединение установлено для регистрации");
-              registerUser(registerUsername, registerPassword);
+              registerUser(registerNickname, registerDisplayName, registerPassword, registerButton);
               
               // Устанавливаем таймаут для снятия индикатора загрузки, если ответ не получен
               setTimeout(() => {
@@ -1071,8 +1318,36 @@ function setupAuthHandlers() {
               try {
                 const data = JSON.parse(event.data);
                 
-                // Проверяем, не является ли ответ эхом запроса регистрации
-                if (data.type === "register" && data.username && data.password) {
+                // Проверяем, является ли сообщение ответом на регистрацию
+                if (data.type === "register_response") {
+                  if (data.success) {
+                    console.log("Получен успешный ответ на регистрацию:", data);
+                    setButtonLoading(registerButton, false);
+                    
+                    // Сохраняем полученные данные
+                    authToken = data.token;
+                    username = data.display_name;
+                    localStorage.setItem('auth_token', authToken);
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('nickname', data.nickname);
+                    
+                    // Показываем уведомление
+                    showToast(`Регистрация успешна! Добро пожаловать, ${username}!`);
+                    
+                    // Перезагружаем страницу
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 800);
+                  } else {
+                    console.log("Ошибка регистрации:", data.error);
+                    setButtonLoading(registerButton, false);
+                    document.getElementById('register-error').textContent = data.error;
+                  }
+                  return;
+                }
+                
+                // Проверяем, не является ли ответ эхом запроса регистрации (запасной вариант)
+                if (data.type === "register" && data.nickname && data.display_name && data.password) {
                   console.log("Получено эхо запроса регистрации. Ожидаем ответ...");
                   
                   // Устанавливаем таймаут для обработки результата регистрации
@@ -1085,9 +1360,10 @@ function setupAuthHandlers() {
                     // Генерируем временный токен (в реальной системе это делал бы сервер)
                     const fakeToken = "temp_token_" + Math.random().toString(36).substr(2) + "_" + Date.now();
                     localStorage.setItem('auth_token', fakeToken);
-                    localStorage.setItem('username', registerUsername);
+                    localStorage.setItem('username', registerDisplayName); // Используем отображаемое имя
+                    localStorage.setItem('nickname', registerNickname); // Сохраняем никнейм
                     authToken = fakeToken;
-                    username = registerUsername;
+                    username = registerDisplayName;
                     
                     // Показываем приветственное сообщение
                     showToast(`Регистрация успешна! Добро пожаловать, ${username}!`);
@@ -1139,7 +1415,7 @@ function setupAuthHandlers() {
           } else {
             // Если объект ws существует, но не в открытом состоянии
             setTimeout(() => {
-              registerUser(registerUsername, registerPassword);
+              registerUser(registerNickname, registerDisplayName, registerPassword);
               // Скрываем индикатор загрузки через 2 секунды, если не получили ответ
               setTimeout(() => setButtonLoading(registerButton, false), 2000);
             }, 1000); // Увеличиваем задержку до 1 секунды
@@ -1151,7 +1427,7 @@ function setupAuthHandlers() {
         }
       } else {
         // WebSocket соединение уже установлено
-        registerUser(registerUsername, registerPassword);
+        registerUser(registerNickname, registerDisplayName, registerPassword, registerButton);
         // Скрываем индикатор загрузки через 2 секунды, если не получили ответ
         setTimeout(() => setButtonLoading(registerButton, false), 2000);
       }

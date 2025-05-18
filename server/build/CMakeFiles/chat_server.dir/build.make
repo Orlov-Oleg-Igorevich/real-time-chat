@@ -126,6 +126,8 @@ chat_server: CMakeFiles/chat_server.dir/db.cpp.o
 chat_server: CMakeFiles/chat_server.dir/build.make
 chat_server: /usr/lib/x86_64-linux-gnu/libboost_system.so.1.83.0
 chat_server: /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.83.0
+chat_server: /usr/lib/x86_64-linux-gnu/libssl.so
+chat_server: /usr/lib/x86_64-linux-gnu/libcrypto.so
 chat_server: /usr/lib/x86_64-linux-gnu/libboost_atomic.so.1.83.0
 chat_server: CMakeFiles/chat_server.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/home/oleg/Рабочий стол/real-time-chat/server/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable chat_server"
