@@ -314,6 +314,119 @@ real-time-chat/
 
 ---
 
+## Развертывание на сервере
+
+### Требования к серверу
+- Ubuntu/Debian или совместимый дистрибутив Linux
+- Минимум 1 ГБ RAM
+- 5 ГБ свободного места на диске
+- Открытые порты 80/443 (HTTP/HTTPS) и 9002 (WebSocket)
+
+### Установка зависимостей
+```bash
+# Обновление пакетов
+sudo apt update
+
+# Основные зависимости
+sudo apt install -y build-essential cmake git
+
+# Библиотеки разработки
+sudo apt install -y libboost-all-dev libsqlite3-dev libssl-dev nlohmann-json3-dev
+
+# Веб-сервер
+sudo apt install -y nginx
+```
+
+### Настройка проекта
+1. Клонирование репозитория: `git clone https://github.com/ваш-аккаунт/real-time-chat.git /var/www/real-time-chat`
+2. Компиляция сервера:
+   ```bash
+   cd /var/www/real-time-chat/server
+   mkdir -p build && cd build
+   cmake ..
+   make
+   ```
+3. Настройка Nginx:
+   ```bash
+   sudo nano /etc/nginx/sites-available/real-time-chat
+   ```
+   
+   Контент файла:
+   ```nginx
+   server {
+       listen 80;
+       server_name ваш-домен-или-ip;
+   
+       root /var/www/real-time-chat/client;
+       index index.html;
+   
+       location / {
+           try_files $uri $uri/ =404;
+       }
+       
+       location /socket/ {
+           proxy_pass http://localhost:9002;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+       }
+   }
+   ```
+
+4. Активация конфигурации Nginx:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/real-time-chat /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+5. Настройка автоматического запуска:
+   ```bash
+   sudo nano /etc/systemd/system/chat-server.service
+   ```
+   
+   Содержимое файла:
+   ```ini
+   [Unit]
+   Description=Real-Time Chat Server
+   After=network.target
+   
+   [Service]
+   Type=simple
+   User=www-data
+   WorkingDirectory=/var/www/real-time-chat/server/build
+   ExecStart=/var/www/real-time-chat/server/build/chat_server
+   Restart=on-failure
+   
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   
+   Активация сервиса:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable chat-server
+   sudo systemctl start chat-server
+   ```
+
+### Настройка SSL (рекомендуется)
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d ваш-домен
+```
+
+### Обновление проекта на сервере
+```bash
+cd /var/www/real-time-chat
+git pull
+cd server/build
+make
+sudo systemctl restart chat-server
+```
+
+---
+
 ## Авторы и лицензия
 
 - Автор: Oleg and Sergey (и сообщество Open Source)

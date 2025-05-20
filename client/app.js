@@ -449,7 +449,9 @@ function initWebSocket() {
   
   // Определяем протокол WebSocket на основе протокола страницы
   const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-  const wsUrl = `${protocol}localhost:9002`;
+  // Используем относительный путь для подключения к WebSocket через Nginx прокси
+  // или напрямую по домену/IP сервера
+  const wsUrl = `${protocol}${window.location.host}/socket`;
   
   // Устанавливаем соединение
   ws = new WebSocket(wsUrl);
