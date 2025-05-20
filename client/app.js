@@ -124,7 +124,7 @@ function loginUser(nickname, password, loginButton) {
     
     // Создаем новое WebSocket соединение
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}localhost:9002`;
+    const wsUrl = `${protocol}${window.location.host}/socket`;
     
     ws = new WebSocket(wsUrl);
     
@@ -208,7 +208,7 @@ function registerUser(nickname, display_name, password, registerButton) {
     
     // Создаем новое WebSocket соединение
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}localhost:9002`;
+    const wsUrl = `${protocol}${window.location.host}/socket`;
     
     ws = new WebSocket(wsUrl);
     
@@ -1087,7 +1087,7 @@ function setupAuthHandlers() {
             console.log("Инициализация WebSocket для входа");
             // Так как у нас еще нет токена и имени, мы создаем временное соединение вручную
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const wsUrl = `${protocol}localhost:9002`;
+            const wsUrl = `${protocol}${window.location.host}/socket`;
             ws = new WebSocket(wsUrl);
             
             // Добавляем обработчики для нового соединения
@@ -1288,7 +1288,7 @@ function setupAuthHandlers() {
             console.log("Инициализация WebSocket для регистрации");
             // Так как у нас еще нет токена и имени, мы создаем временное соединение вручную
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const wsUrl = `${protocol}localhost:9002`;
+            const wsUrl = `${protocol}${window.location.host}/socket`;
             ws = new WebSocket(wsUrl);
             
             // Добавляем обработчики для нового соединения

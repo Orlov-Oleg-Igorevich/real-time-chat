@@ -686,6 +686,7 @@ form {
   display: flex;
   gap: 12px;
   align-items: center;
+  width: 100%;
 }
 
 .input-group {
@@ -752,9 +753,26 @@ button:active {
   color: white;
   width: 48px;
   height: 48px;
+  min-width: 48px; /* Предотвращает сжатие кнопки */
   border-radius: 50%;
   font-size: 1.1rem;
   box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5; /* Увеличиваем z-index, чтобы кнопка всегда была видна */
+  position: relative; /* Для правильного позиционирования */
+  flex-shrink: 0; /* Предотвращает сжатие кнопки при недостатке места */
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.send-btn:hover {
+  transform: scale(1.05);
+  background-color: #3655d8; /* Немного темнее при наведении */
+}
+
+.send-btn:active {
+  transform: scale(0.95);
 }
 
 /* Стили для панели эмодзи */
@@ -930,6 +948,40 @@ button:active {
   
   .name {
     font-size: 0.7rem;
+  }
+  
+  /* Улучшенные стили для формы отправки сообщения на мобильных */
+  #chat-footer {
+    padding: 10px;
+  }
+  
+  form {
+    gap: 8px;
+  }
+  
+  .input-group {
+    padding: 0 8px;
+  }
+  
+  input {
+    padding: 10px 8px;
+    font-size: 0.9rem;
+  }
+  
+  .send-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    font-size: 1rem;
+    /* Фиксированное позиционирование кнопки */
+    position: relative;
+    right: 0;
+    box-shadow: 0 2px 5px rgba(67, 97, 238, 0.25);
+  }
+  
+  .emoji-btn, .attach-btn {
+    font-size: 1rem;
+    padding: 6px;
   }
   
   #emoji-overlay {
@@ -1208,4 +1260,37 @@ button:active {
 .theme-dark .menu-item:hover {
   background-color: rgba(67, 97, 238, 0.2);
   color: #a0c0ff;
+}
+
+/* Дополнительные адаптивные стили для очень маленьких экранов */
+@media (max-width: 360px) {
+  /* Уменьшаем размеры элементов формы отправки сообщений */
+  .input-group {
+    padding: 0 6px;
+  }
+  
+  input {
+    padding: 8px 6px;
+    font-size: 0.85rem;
+  }
+  
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 0.9rem;
+  }
+  
+  .emoji-btn, .attach-btn {
+    font-size: 0.9rem;
+    padding: 5px;
+  }
+  
+  form {
+    gap: 6px;
+  }
+  
+  #chat-footer {
+    padding: 8px;
+  }
 }
