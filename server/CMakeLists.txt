@@ -12,7 +12,10 @@ add_executable(chat_server
     chat_server.cpp
     db.cpp)
 
-target_include_directories(chat_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(chat_server PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/jwt-cpp/include
+)
 find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(nlohmann_json REQUIRED)
 target_link_libraries(chat_server PRIVATE 

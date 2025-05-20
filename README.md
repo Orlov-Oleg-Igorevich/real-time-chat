@@ -344,8 +344,27 @@ sudo apt install -y nginx
    cd /var/www/real-time-chat/server
    mkdir -p build && cd build
    cmake ..
+   ```
+   
+   > **Решение проблем с JWT-cpp**: Если при компиляции возникает ошибка `picojson/picojson.h: No such file or directory`,
+   > это означает, что компилятор не может найти заголовочные файлы JWT-cpp. Проверьте, что в файле `/server/CMakeLists.txt`
+   > добавлен правильный путь к директории включаемых файлов:
+   > ```cmake
+   > target_include_directories(chat_server PRIVATE 
+   >     ${CMAKE_CURRENT_SOURCE_DIR}
+   >     ${CMAKE_CURRENT_SOURCE_DIR}/jwt-cpp/include
+   > )
+   > ```
+   > И в файле `/server/auth.hpp` подключение JWT выполняется через кавычки, а не угловые скобки:
+   > ```cpp
+   > #include "jwt-cpp/jwt.h"  // Вместо <jwt-cpp/jwt.h>
+   > ```
+   
+   После настройки CMakeLists.txt:
+   ```bash
    make
    ```
+
 3. Настройка Nginx:
    ```bash
    sudo nano /etc/nginx/sites-available/real-time-chat

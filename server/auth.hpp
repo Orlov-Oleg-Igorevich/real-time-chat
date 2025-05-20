@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <jwt-cpp/jwt.h>
+#include "jwt-cpp/jwt.h"  // Изменение с <jwt-cpp/jwt.h> на "jwt-cpp/jwt.h"
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <iomanip>
