@@ -346,6 +346,17 @@ sudo apt install -y nginx
    cmake ..
    ```
    
+   > **Важно**: Убедитесь, что используете правильные пути в командах:
+   > - Nginx: `/etc/nginx/` (а не `/nginx/`)
+   > - Systemd: `/etc/systemd/` (а не `/systemd/`)
+   > 
+   > Корректные команды для управления сервисами:
+   > ```bash
+   > sudo nano /etc/nginx/sites-available/real-time-chat
+   > sudo ln -s /etc/nginx/sites-available/real-time-chat /etc/nginx/sites-enabled/
+   > sudo nano /etc/systemd/system/chat-server.service
+   > ```
+   
    > **Решение проблем с JWT-cpp**: Если при компиляции возникает ошибка `picojson/picojson.h: No such file or directory`,
    > это означает, что компилятор не может найти заголовочные файлы JWT-cpp. Проверьте, что в файле `/server/CMakeLists.txt`
    > добавлен правильный путь к директории включаемых файлов:
@@ -364,6 +375,19 @@ sudo apt install -y nginx
    ```bash
    make
    ```
+   
+   > **Важно**: Если в CMakeLists.txt недостаточно путей включения для JWT-cpp, отредактируйте файл:
+   > ```bash
+   > sudo nano server/CMakeLists.txt
+   > ```
+   > И добавьте дополнительный путь включения:
+   > ```cmake
+   > target_include_directories(chat_server PRIVATE 
+   >     ${CMAKE_CURRENT_SOURCE_DIR}
+   >     ${CMAKE_CURRENT_SOURCE_DIR}/jwt-cpp
+   >     ${CMAKE_CURRENT_SOURCE_DIR}/jwt-cpp/include
+   > )
+   > ```
 
 3. Настройка Nginx:
    ```bash
