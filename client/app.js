@@ -504,9 +504,10 @@ function initWebSocket() {
   console.log(`Подключение к WebSocket серверу: ${wsUrl}`);
   
   // Выводим информацию о URL и протоколе для отладки
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   console.log("Информация о соединении:", {
     pageProtocol: window.location.protocol,
-    wsProtocol: protocol,
+    wsProtocol: wsProtocol,
     host: window.location.host,
     fullUrl: wsUrl
   });
