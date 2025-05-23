@@ -123,8 +123,7 @@ function loginUser(nickname, password, loginButton) {
     console.log("WebSocket соединение не установлено или закрыто. Пытаемся переподключиться...");
     
     // Создаем новое WebSocket соединение
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}${window.location.host}/socket`;
+    const wsUrl = createWebSocketUrl();
     
     ws = new WebSocket(wsUrl);
     
@@ -207,8 +206,7 @@ function registerUser(nickname, display_name, password, registerButton) {
     console.log("WebSocket соединение не установлено или закрыто. Пытаемся переподключиться...");
     
     // Создаем новое WebSocket соединение
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const wsUrl = `${protocol}${window.location.host}/socket`;
+    const wsUrl = createWebSocketUrl();
     
     ws = new WebSocket(wsUrl);
     
@@ -354,6 +352,32 @@ let isTyping = false;
 document.addEventListener('DOMContentLoaded', async function() {
   console.log("DOM загружен, инициализируем элементы");
   
+  // Проверяем тип соединения и показываем предупреждение, если нет HTTPS
+  if (window.location.protocol === 'http:' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+    console.warn("Внимание! Соединение по HTTP может быть небезопасным для аутентификации.");
+    const securityWarning = document.createElement('div');
+    securityWarning.className = 'security-warning';
+    securityWarning.style.backgroundColor = '#ffe066';
+    securityWarning.style.color = '#664d03';
+    securityWarning.style.padding = '10px';
+    securityWarning.style.textAlign = 'center';
+    securityWarning.style.position = 'fixed';
+    securityWarning.style.top = '0';
+    securityWarning.style.left = '0';
+    securityWarning.style.right = '0';
+    securityWarning.style.zIndex = '1000';
+    securityWarning.innerHTML = '<strong>Внимание!</strong> Соединение не защищено. WebSocket может работать некорректно. <a href="#" id="fix-connection" style="text-decoration:underline;font-weight:bold;color:#664d03;">Исправить</a>';
+    document.body.appendChild(securityWarning);
+    
+    // Добавляем обработчик для кнопки исправления
+    document.getElementById('fix-connection').addEventListener('click', function(e) {
+      e.preventDefault();
+      // Пытаемся переключить на HTTPS
+      const httpsUrl = 'https://' + window.location.host + window.location.pathname;
+      window.location.href = httpsUrl;
+    });
+  }
+  
   messagesList = document.getElementById("messages");
   connectionStatus = document.getElementById("connection-status");
   
@@ -417,6 +441,31 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
+// Функция для создания WebSocket URL с поддержкой HTTPS и прямого IP адреса
+function createWebSocketUrl() {
+  // Определяем протокол на основе текущего протокола страницы
+  const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  
+  // Извлекаем хост (домен или IP) без порта и пути
+  let host = window.location.host;
+  
+  // Проверяем, нужно ли добавлять путь /socket
+  // Если мы уже имеем порт или путь в хосте, не добавляем /socket
+  const socketPath = '/socket';
+  
+  // Добавляем путь, если он отсутствует
+  const wsUrl = `${protocol}${host}${socketPath}`;
+  
+  console.log("Создан WebSocket URL:", {
+    pageProtocol: window.location.protocol,
+    wsProtocol: protocol,
+    host: host,
+    fullUrl: wsUrl
+  });
+  
+  return wsUrl;
+}
+
 // Функция для инициализации WebSocket-соединения
 function initWebSocket() {
   // Перезагружаем данные из localStorage, на всякий случай
@@ -447,15 +496,20 @@ function initWebSocket() {
     tokenType: authToken.startsWith("temp_token_") ? "временный" : "JWT"
   });
   
-  // Определяем протокол WebSocket на основе протокола страницы
-  const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-  // Используем относительный путь для подключения к WebSocket через Nginx прокси
-  // или напрямую по домену/IP сервера
-  const wsUrl = `${protocol}${window.location.host}/socket`;
+  // Создаем URL для WebSocket соединения
+  const wsUrl = createWebSocketUrl();
   
   // Устанавливаем соединение
   ws = new WebSocket(wsUrl);
   console.log(`Подключение к WebSocket серверу: ${wsUrl}`);
+  
+  // Выводим информацию о URL и протоколе для отладки
+  console.log("Информация о соединении:", {
+    pageProtocol: window.location.protocol,
+    wsProtocol: protocol,
+    host: window.location.host,
+    fullUrl: wsUrl
+  });
   
   // Настраиваем обработчики WebSocket
   setupWebSocketHandlers();
@@ -481,14 +535,32 @@ function setupWebSocketHandlers() {
 
   ws.onerror = (error) => {
     console.error("WebSocket error:", error);
+    console.log("Детали WebSocket соединения:", {
+      url: ws.url,
+      protocol: window.location.protocol,
+      readyState: ws.readyState,
+      binaryType: ws.binaryType
+    });
     connectionStatus.textContent = "Ошибка";
     connectionStatus.style.backgroundColor = "#ef4444";
+    
+    // Показываем пользователю информацию об ошибке
+    showToast("Ошибка подключения к серверу. Проверьте консоль.");
   };
 
   ws.onclose = (event) => {
     console.log("WebSocket connection closed:", event.code, event.reason);
     connectionStatus.textContent = "Не в сети";
     connectionStatus.style.backgroundColor = "#ef4444";
+    
+    // Отображаем код ошибки для диагностики
+    console.log("WebSocket закрыт с кодом:", event.code, {
+      reason: event.reason || "причина не указана",
+      wasClean: event.wasClean
+    });
+    
+    // Показываем пользователю сообщение о потере соединения
+    showToast("Соединение с сервером прервано. Переподключение через 5 секунд...");
     
     // Автоматическое переподключение через 5 секунд
     setTimeout(() => {
@@ -1086,8 +1158,7 @@ function setupAuthHandlers() {
           if (!ws) {
             console.log("Инициализация WebSocket для входа");
             // Так как у нас еще нет токена и имени, мы создаем временное соединение вручную
-            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const wsUrl = `${protocol}${window.location.host}/socket`;
+            const wsUrl = createWebSocketUrl();
             ws = new WebSocket(wsUrl);
             
             // Добавляем обработчики для нового соединения
@@ -1287,8 +1358,7 @@ function setupAuthHandlers() {
           if (!ws) {
             console.log("Инициализация WebSocket для регистрации");
             // Так как у нас еще нет токена и имени, мы создаем временное соединение вручную
-            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const wsUrl = `${protocol}${window.location.host}/socket`;
+            const wsUrl = createWebSocketUrl();
             ws = new WebSocket(wsUrl);
             
             // Добавляем обработчики для нового соединения
@@ -1497,23 +1567,62 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("Найдена кнопка проверки соединения, добавляем обработчик");
     testConnectionBtn.addEventListener("click", function() {
       console.log("Кнопка проверки соединения нажата");
+      
+      // Получаем информацию о текущем состоянии соединения
+      const wsInfo = {
+        exists: !!ws,
+        readyState: ws ? ws.readyState : "не определено",
+        url: ws ? ws.url : "не определено",
+        protocol: window.location.protocol,
+        secureContext: window.isSecureContext,
+      };
+      
+      // Выводим детальную информацию о соединении в консоль
+      console.log("Детали WebSocket соединения:", wsInfo);
+      
       if (ws && ws.readyState === WebSocket.OPEN) {
         console.log("WebSocket соединение открыто");
-        alert("WebSocket соединение активно!");
+        showToast("WebSocket соединение активно!");
         
         // Отправляем тестовое сообщение
         const testMessage = {
-          type: "message",
+          type: "ping",
           user: username,
-          text: "Тестовое сообщение: " + new Date().toLocaleTimeString()
+          token: authToken,
+          timestamp: new Date().toISOString()
         };
         ws.send(JSON.stringify(testMessage));
+        showToast("Отправлен тестовый пинг на сервер");
       } else {
-        console.log("WebSocket соединение не открыто. Текущий статус:", ws ? ws.readyState : "undefined");
-        alert("WebSocket соединение не установлено! Статус: " + (ws ? ws.readyState : "undefined"));
+        console.log("WebSocket соединение не открыто. Текущий статус:", wsInfo.readyState);
+        
+        // Более подробная диагностика
+        let errorMsg = "";
+        
+        if (!ws) {
+          errorMsg = "WebSocket не инициализирован";
+        } else {
+          switch(ws.readyState) {
+            case WebSocket.CONNECTING:
+              errorMsg = "WebSocket подключается...";
+              break;
+            case WebSocket.CLOSING:
+              errorMsg = "WebSocket закрывается";
+              break;
+            case WebSocket.CLOSED:
+              errorMsg = "WebSocket закрыт";
+              break;
+            default:
+              errorMsg = "Неизвестное состояние WebSocket";
+          }
+        }
+        
+        showToast(`Проблема соединения: ${errorMsg}`);
         
         // Пробуем переподключиться
-        location.reload();
+        if (confirm("Соединение с сервером не установлено. Обновить страницу?")) {
+          location.reload();
+        }
       }
     });
   } else {
